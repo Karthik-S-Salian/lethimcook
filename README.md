@@ -2,14 +2,12 @@
 
 ## how to run
 ensure all the keys are added in the env
-TURSO_CONNECTION_URL=...
-TURSO_AUTH_TOKEN=...
-JWT_SECRET = ...
 
-install all packages
-```bash
-npm i
-```
+TURSO_CONNECTION_URL=...
+
+TURSO_AUTH_TOKEN=...
+
+JWT_SECRET = ...
 
 install all packages
 ```bash
