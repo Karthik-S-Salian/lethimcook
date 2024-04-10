@@ -1,0 +1,34 @@
+---
+import { Icon } from "astro-icon/components";
+const user = Astro.locals.user;
+---
+
+<div
+    class="flex px-8 py-4 justify-between items-center rounded-full bg-white/10 border-2 border-white w-[80%] fixed left-1/2 -translate-x-1/2 top-8 m-auto"
+>
+    <Icon name="mdi:cook" />
+
+    <nav class="flex gap-2">
+        <a href="/recipes">recipies</a>
+        <a href="/recipes/create">create</a>
+        <a href="/about">about</a>
+    </nav>
+
+    {
+        user ? (
+            <a
+                class="flex gap-2 items-center bg-primary btn-primary  px-4 py-2 rounded-btn"
+                href="/auth/login"
+            >
+                Login
+                <Icon name="tabler:arrow-right" />
+            </a>
+        ) : (
+            <div class="avatar m-0">
+                <div class="h-8 aspect-square rounded-full">
+                    <img src="https://daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg" />
+                </div>
+            </div>
+        )
+    }
+</div>

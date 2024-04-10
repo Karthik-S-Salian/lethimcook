@@ -1,0 +1,67 @@
+---
+import { eq } from "drizzle-orm/sqlite-core/expressions";
+import { db } from "../../lib/server/db";
+import { userTable } from "../../lib/server/db/schema";
+import { setToken } from "../../lib/utils"
+import bcrypt from "bcrypt";
+
+async function login(data:FormData) {
+    const name = data.get('name')?.toString();;
+    const email = data.get("email")?.toString();
+    const password = data.get("password")?.toString();
+
+    if(!email ||!password ||!name){
+        return
+    }
+
+    const hash = bcrypt.hashSync(password.toString(), 10);
+	let user:User;
+
+		try {
+			const insertedUsers = await db.insert(userTable).values({
+				name: name.toString(),
+				email: email.toString(),
+				password: hash,
+			}).returning();
+
+			if (insertedUsers.length > 0) {
+				user = insertedUsers[0]
+			} else {
+				throw new Error("Could not insert");
+			}
+
+		} catch (error) {
+			return;
+		}
+
+		await setToken(user, Astro.cookies)
+        return true
+}
+
+if (Astro.request.method === "POST") { 
+    const status = await login(await Astro.request.formData());
+    if(status) return Astro.redirect("/")
+}
+---
+
+
+<form method="post" class="flex flex-col gap-4 mx-auto max-w-[500px]">
+    <h3>SignUP</h3>
+    <label>
+        <p>Name</p>
+        <input type="text" name="name" required class="input input-bordered w-full ">
+    </label>
+    <label>
+        <p>Email</p>
+        <input type="email" name="email" required class="input input-bordered w-full ">
+    </label>
+
+    <label >
+        <p>Password</p>
+        <input type="password" name="password" required class="input input-bordered w-full">
+    </label>
+
+    <button class="btn btn-primary">Submit</button>
+
+    <p>Dont have an account <a href="auth/signup">signup</a></p>
+</form>

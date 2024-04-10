@@ -1,0 +1,70 @@
+---
+import { eq } from "drizzle-orm/sqlite-core/expressions";
+import { db } from "../../lib/server/db";
+import { userTable } from "../../lib/server/db/schema";
+import { setToken } from "../../lib/utils"
+import bcrypt from "bcrypt";
+
+let error=""
+
+async function login(data:FormData) {
+    const email = data.get("email")?.toString();
+    const password = data.get("password")?.toString();
+
+    if(!email ||!password){
+        error ="all the feilds required"
+        return;
+    }
+
+    const queryResult = await db
+			.select({
+				email: userTable.email,
+				password: userTable.password,
+				name: userTable.name,
+				id: userTable.id,
+			})
+			.from(userTable)
+			.where(eq(userTable.email, email))
+			.limit(1);
+
+
+        if (queryResult.length == 0) {
+			error ="Invalid credentials";
+            return;
+		}
+
+		const user = queryResult[0];
+
+		if (!user || !bcrypt.compareSync(password,user.password)) {
+            error ="Invalid credentials"
+			return;
+		}
+
+		await setToken(user, Astro.cookies);
+        return true
+}
+
+if (Astro.request.method === "POST") { 
+    const status = await login(await Astro.request.formData());
+    if(status) return Astro.redirect("/")
+}
+---
+
+
+<form method="post" class="flex flex-col gap-4 mx-auto max-w-[500px]">
+    {error && <p>{error}</p>}
+    <h3>Login</h3>
+    <label>
+        <p>Email</p>
+        <input type="email" name="email" required class="input input-bordered w-full ">
+    </label>
+
+    <label >
+        <p>Password</p>
+        <input type="password" name="password" required class="input input-bordered w-full">
+    </label>
+
+    <button class="btn btn-primary">Submit</button>
+
+    <p>Dont have an account <a href="signup">signup</a></p>
+</form>

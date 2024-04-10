@@ -1,0 +1,207 @@
+---
+import Quill from "../../components/Quill";
+import TagInput from "../../components/TagInput";
+import Layout from "../../layouts/Layout.astro";
+import { v2 as cloudinary } from "cloudinary";
+import { db } from "../../lib/server/db";
+import {
+    ingredientRecipeTable,
+    ingredientTable,
+    recipeTable,
+    tagRecipeTable,
+} from "../../lib/server/db/schema";
+import { tagsTable } from "../../lib/server/db/schema";
+import { eq } from "drizzle-orm/sqlite-core/expressions";
+let error: string = "";
+
+type UploadResponse = {
+    secure_url: string;
+};
+
+cloudinary.config({
+    cloud_name: import.meta.env.CLOUDINARY_CLOUD_NAME,
+    api_key: import.meta.env.CLOUDINARY_API_KEY,
+    api_secret: import.meta.env.CLOUDINARY_API_SECRET,
+});
+
+const uploadStream = async (buffer: Uint8Array, options: any) => {
+    return new Promise<UploadResponse>((resolve, reject) => {
+        cloudinary.uploader
+            .upload_stream(options, (error, result) => {
+                if (error) return reject(error);
+                resolve(result as unknown as UploadResponse);
+            })
+            .end(buffer);
+    });
+};
+
+async function addTag(tag: string, recipeId: number) {
+    let ids = await db
+        .select({ id: tagsTable.id })
+        .from(tagsTable)
+        .where(eq(tagsTable.tag, tag));
+
+    if (!ids.length) {
+        ids = await db
+            .insert(tagsTable)
+            .values({
+                tag,
+            })
+            .returning({ id: tagsTable.id });
+    }
+
+    const id = ids[0].id;
+
+    await db.insert(tagRecipeTable).values({
+        tag: id,
+        recipe: recipeId,
+    });
+}
+
+async function addIngredients(ingredient: string, recipeId: number) {
+    let ids = await db
+        .select({ id: ingredientTable.id })
+        .from(ingredientTable)
+        .where(eq(ingredientTable.ingredient, ingredient));
+
+    if (!ids.length) {
+        ids = await db
+            .insert(ingredientTable)
+            .values({
+                ingredient,
+            })
+            .returning({ id: ingredientTable.id });
+    }
+
+    const id = ids[0].id;
+
+    await db.insert(ingredientRecipeTable).values({
+        ingredient: id,
+        recipe: recipeId,
+    });
+}
+
+async function createRecipe(data: FormData) {
+    const image = data.get("image") as File;
+    const arrayBuffer = await image.arrayBuffer();
+    const uint8array = new Uint8Array(arrayBuffer);
+
+    const response = await uploadStream(uint8array, {
+        folder: "astro",
+    });
+
+    const url = response.secure_url;
+
+    const title = data.get("title")?.toString();
+    const shortDescription = data.get("short-description")?.toString();
+    const description = data.get("description")?.toString();
+    const tags = data.get("tags")?.toString();
+    const ingredients = data.get("ingredients")?.toString();
+
+    if (!title || !description || !shortDescription || !tags || !ingredients) {
+        error = "all the feilds required";
+        return;
+    }
+
+    const recipes = await db
+        .insert(recipeTable)
+        .values({
+            title,
+            shortDescription,
+            description,
+            image: url,
+            authorId: Astro.locals.user.id,
+        })
+        .returning();
+
+    if (!recipes.length) {
+        error = "recipe could not be inserted";
+        return;
+    }
+    const recipe = recipes[0];
+    const tagList = tags.split(",").filter((tag) => tag);
+    await Promise.allSettled(tagList.map((tag) => addTag(tag, recipe.id)));
+    await Promise.allSettled(
+        ingredients
+            .split(",")
+            .map((ingredient) => addIngredients(ingredient, recipe.id)),
+    );
+    return true;
+}
+
+if (Astro.request.method === "POST") {
+    const status = await createRecipe(await Astro.request.formData());
+    if (status) return Astro.redirect("/recipes");
+}
+
+const tags = (await db.select({ tag: tagsTable.tag }).from(tagsTable)).map(
+    (t) => t.tag,
+);
+const ingredients = (
+    await db
+        .select({ ingredient: ingredientTable.ingredient })
+        .from(ingredientTable)
+).map((i) => i.ingredient);
+---
+
+<Layout title="create recipe">
+    <form
+        method="post"
+        class="flex flex-col gap-4 mx-auto max-w-[500px]"
+        enctype="multipart/form-data"
+    >
+        {error && <p>{error}</p>}
+        <h3>Create Recipe</h3>
+        <label>
+            <p>title</p>
+            <input
+                type="text"
+                name="title"
+                required
+                class="input input-bordered w-full"
+            />
+        </label>
+
+        <label>
+            <p>short description</p>
+            <textarea
+                name="short-description"
+                class="w-full textarea textarea-bordered"></textarea>
+        </label>
+        <label>
+            <p>description</p>
+            <Quill client:only="react" />
+        </label>
+
+        <label>
+            <p>Image</p>
+            <input
+                type="file"
+                class="file-input file-input-bordered w-full"
+                name="image"
+            />
+        </label>
+
+        <label>
+            <p>Tags</p>
+            <TagInput client:only="react" tags={tags} name="tags" />
+        </label>
+
+        <label>
+            <p>Ingredients</p>
+            <TagInput
+                client:only="react"
+                tags={ingredients}
+                name="ingredients"
+            />
+        </label>
+
+        <button class="btn btn-primary">Submit</button>
+    </form>
+</Layout>
+
+<style is:global>
+    .ql-container {
+        @apply min-h-40;
+    }
+</style>

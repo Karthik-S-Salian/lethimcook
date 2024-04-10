@@ -1,0 +1,106 @@
+---
+import { eq } from "drizzle-orm";
+import { db } from "../../lib/server/db";
+import {
+    ingredientRecipeTable,
+    ingredientTable,
+    recipeTable,
+    tagRecipeTable,
+    tagsTable,
+    userTable,
+} from "../../lib/server/db/schema";
+import Layout from "../../layouts/Layout.astro";
+
+const { slug } = Astro.params;
+let recipe;
+const recipes = await db
+    .select()
+    .from(recipeTable)
+    .where(eq(recipeTable.id, Number(slug)));
+
+let user: User;
+let tags: string[];
+let ingredients: string[];
+
+if (recipes.length) {
+    recipe = recipes[0];
+    user = (await db.select().from(userTable))[0];
+
+    tags = (
+        await db
+            .select({ tag: tagsTable.tag })
+            .from(tagRecipeTable)
+            .innerJoin(tagsTable, eq(tagRecipeTable.tag, tagsTable.id))
+    ).map((t) => t.tag);
+    ingredients = (
+        await db
+            .select({ ingredient: ingredientTable.ingredient })
+            .from(ingredientRecipeTable)
+            .innerJoin(
+                ingredientTable,
+                eq(ingredientRecipeTable.ingredient, ingredientTable.id),
+            )
+    ).map((t) => t.ingredient);
+} else {
+    return Astro.redirect("/recipes");
+}
+---
+
+<Layout title={recipe.title}>
+    <article class="flex flex-col gap-8 max-w-[800px] mx-auto">
+        <h1 class="text-4xl font-bold">{recipe.title}</h1>
+        <img
+            src={recipe.image}
+            alt={recipe.title}
+            class="w-full aspect-video mx-auto max-w-[800px] object-cover rounded-box"
+        />
+        <div class="flex gap-6 align-middle">
+            <div class="avatar">
+                <div
+                    class="w-8 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2"
+                >
+                    <img
+                        src="https://daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg"
+                    />
+                </div>
+            </div>
+            <span>By {user.name}</span>
+            <span
+                >on {
+                    new Intl.DateTimeFormat("en-US", {
+                        dateStyle: "full",
+                        timeStyle: "short",
+                    }).format(new Date(recipe.createdAt))
+                }</span
+            >
+        </div>
+        <p>{recipe.shortDescription}</p>
+        <div class="prose lg:prose-xl" set:html={recipe.description} />
+
+        <div class="border border-neutral p-4 rounded-btn">
+            <h4 class="text-lg font-semibold mb-4">tags</h4>
+            <div class="flex flex-wrap gap-4">
+                {
+                    tags.map((tag) => (
+                        <span class="bg-neutral-content/20 px-2 py-1 rounded-btn border border-neutral">
+                            {tag}
+                        </span>
+                    ))
+                }
+            </div>
+        </div>
+
+        <div class="border border-neutral p-4 rounded-btn">
+            <h4 class="text-lg font-semibold mb-4">Ingredients</h4>
+            <ul class="flex flex-col gap-4">
+                {
+                    ingredients.map((ingredient) => (
+                        <li class="bg-neutral-content/20 px-2 py-1 rounded-btn border border-neutral list-disc mx-2 w-min">
+                            {ingredient}
+                        </li>
+                    ))
+                }
+            </ul>
+        </div>
+    </article>
+</Layout>
