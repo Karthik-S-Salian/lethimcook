@@ -15,10 +15,21 @@ import Layout from "../../layouts/Layout.astro";
 import { Icon } from "astro-icon/components";
 
 const { slug } = Astro.params;
+const user = Astro.locals.user;
 let recipe;
 const recipes = await db
-    .select()
+    .select({
+        id: recipeTable.id,
+        title: recipeTable.title,
+        shortDescription: recipeTable.shortDescription,
+        description: recipeTable.description,
+        createdAt: recipeTable.createdAt,
+        authorName: userTable.name,
+        image: recipeTable.image,
+        authorId: recipeTable.authorId,
+    })
     .from(recipeTable)
+    .innerJoin(userTable, eq(recipeTable.authorId, userTable.id))
     .where(eq(recipeTable.id, Number(slug)));
 
 if (!recipes.length) return Astro.redirect("/recipes");
@@ -28,8 +39,8 @@ recipe = recipes[0];
 if (Astro.request.method === "POST") {
     const data = await Astro.request.formData();
     if (data.has("vote")) {
-        const state = data.get("vote")=="true"
-        await db.update(viewTable).set({ liked: !state })
+        const state = data.get("vote") == "true";
+        await db.update(viewTable).set({ liked: !state });
     } else {
         const comment = data.get("comment")?.toString();
         if (comment) {
@@ -42,15 +53,17 @@ if (Astro.request.method === "POST") {
     }
 }
 
-let user: User;
 let tags: string[];
 let ingredients: string[];
-let comments: Comment[];
+let comments: {
+    content: string;
+    name: string;
+    userId: number;
+    createdAt: string;
+}[];
 let view: View;
 let viewCount: number;
 let likeCount: number;
-
-user = (await db.select().from(userTable))[0];
 
 tags = (
     await db
@@ -69,10 +82,16 @@ ingredients = (
 ).map((t) => t.ingredient);
 
 //comments
-comments = (await db
-    .select()
+comments = await db
+    .select({
+        content: commemtsTable.content,
+        name: userTable.name,
+        userId: userTable.id,
+        createdAt: commemtsTable.createdAt,
+    })
     .from(commemtsTable)
-    .where(eq(commemtsTable.recipeId, recipe.id))) as Comment[];
+    .innerJoin(userTable, eq(commemtsTable.userId, userTable.id))
+    .where(eq(commemtsTable.recipeId, recipe.id));
 
 //views
 let views = await db
@@ -111,7 +130,6 @@ likeCount = (
             and(eq(viewTable.recipeId, recipe.id), eq(viewTable.liked, true)),
         )
 )[0].count;
-
 ---
 
 <Layout title={recipe.title}>
@@ -123,7 +141,7 @@ likeCount = (
             class="w-full aspect-video mx-auto max-w-[800px] object-cover rounded-box"
         />
 
-        <div class="flex gap-6 align-middle">
+        <a class="flex gap-6 align-middle" href={`/profile/${recipe.authorId}`}>
             <div class="avatar">
                 <div
                     class="w-8 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2"
@@ -133,7 +151,7 @@ likeCount = (
                     />
                 </div>
             </div>
-            <span>By {user.name}</span>
+            <span>By {recipe.authorName}</span>
             <span
                 >on {
                     new Intl.DateTimeFormat("en-US", {
@@ -142,7 +160,7 @@ likeCount = (
                     }).format(new Date(recipe.createdAt))
                 }</span
             >
-        </div>
+        </a>
 
         <hr />
 
@@ -195,30 +213,48 @@ likeCount = (
             <h2 class="text-2xl font-semibold">Comments</h2>
             <hr />
 
-            <form method="post">
-                <p class="mb-2">Post a comment</p>
-                <div class="flex">
-                    <input type="text" name="comment" />
-                    <button class="btn btn-primary">Post</button>
-                </div>
-            </form>
+            {
+                comments.reduce(
+                    (p, c) =>
+                        p &&
+                        (c.userId == user.id || c.userId == recipe.authorId),
+                    false,
+                ) && (
+                    <form method="post">
+                        <p class="mb-2">Post a comment</p>
+                        <div class="flex">
+                            <input type="text" name="comment" />
+                            <button class="btn btn-primary">Post</button>
+                        </div>
+                    </form>
+                )
+            }
             {
                 comments.map((comment) => (
-                    <div class="chat chat-end">
-                        <div class="chat-image avatar">
+                    <div class="chat chat-start">
+                        <a
+                            class="chat-image avatar"
+                            href={`profile/${comment.userId}`}
+                        >
                             <div class="w-10 rounded-full">
                                 <img
-                                    alt="Tailwind CSS chat bubble component"
+                                    alt={comment.name}
                                     src="https://daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg"
                                 />
                             </div>
-                        </div>
+                        </a>
                         <div class="chat-header">
-                            Anakin
-                            <time class="text-xs opacity-50">12:46</time>
+                            <a href={`/profile/${comment.userId}`}>
+                                {comment.name}
+                            </a>
+                            <time class="text-xs opacity-50">
+                                {new Intl.DateTimeFormat("en-US", {
+                                    dateStyle: "short",
+                                    timeStyle: "short",
+                                }).format(new Date(comment.createdAt))}
+                            </time>
                         </div>
-                        <div class="chat-bubble">I hate you!</div>
-                        <div class="chat-footer opacity-50">Seen at 12:46</div>
+                        <div class="chat-bubble">{comment.content}</div>
                     </div>
                 ))
             }

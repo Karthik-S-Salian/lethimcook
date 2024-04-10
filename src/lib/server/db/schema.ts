@@ -61,7 +61,7 @@ export const viewTable = sqliteTable('View', {
 export const commemtsTable = sqliteTable('Comment', {
     userId: integer("user_id").references(() => userTable.id).notNull(),
     recipeId: integer("recipe_id").references(() => recipeTable.id).notNull(),
-    content: text("content"),
+    content: text("content").notNull(),
     createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`).notNull()
 }, (table) => {
     return {
