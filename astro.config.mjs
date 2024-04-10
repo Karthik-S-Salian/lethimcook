@@ -12,3 +12,5 @@ export default defineConfig({
     mode: "standalone"
   })
 });
+
+// npm install @iconify-json/ph

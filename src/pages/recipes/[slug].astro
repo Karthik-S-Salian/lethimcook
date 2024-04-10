@@ -1,15 +1,18 @@
 ---
-import { eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { db } from "../../lib/server/db";
 import {
+    commemtsTable,
     ingredientRecipeTable,
     ingredientTable,
     recipeTable,
     tagRecipeTable,
     tagsTable,
     userTable,
+    viewTable,
 } from "../../lib/server/db/schema";
 import Layout from "../../layouts/Layout.astro";
+import { Icon } from "astro-icon/components";
 
 const { slug } = Astro.params;
 let recipe;
@@ -18,32 +21,97 @@ const recipes = await db
     .from(recipeTable)
     .where(eq(recipeTable.id, Number(slug)));
 
+if (!recipes.length) return Astro.redirect("/recipes");
+
+recipe = recipes[0];
+
+if (Astro.request.method === "POST") {
+    const data = await Astro.request.formData();
+    if (data.has("vote")) {
+        const state = data.get("vote")=="true"
+        await db.update(viewTable).set({ liked: !state })
+    } else {
+        const comment = data.get("comment")?.toString();
+        if (comment) {
+            await db.insert(commemtsTable).values({
+                userId: Astro.locals.user.id,
+                recipeId: recipe.id,
+                content: comment,
+            });
+        }
+    }
+}
+
 let user: User;
 let tags: string[];
 let ingredients: string[];
+let comments: Comment[];
+let view: View;
+let viewCount: number;
+let likeCount: number;
 
-if (recipes.length) {
-    recipe = recipes[0];
-    user = (await db.select().from(userTable))[0];
+user = (await db.select().from(userTable))[0];
 
-    tags = (
-        await db
-            .select({ tag: tagsTable.tag })
-            .from(tagRecipeTable)
-            .innerJoin(tagsTable, eq(tagRecipeTable.tag, tagsTable.id))
-    ).map((t) => t.tag);
-    ingredients = (
-        await db
-            .select({ ingredient: ingredientTable.ingredient })
-            .from(ingredientRecipeTable)
-            .innerJoin(
-                ingredientTable,
-                eq(ingredientRecipeTable.ingredient, ingredientTable.id),
-            )
-    ).map((t) => t.ingredient);
-} else {
-    return Astro.redirect("/recipes");
+tags = (
+    await db
+        .select({ tag: tagsTable.tag })
+        .from(tagRecipeTable)
+        .innerJoin(tagsTable, eq(tagRecipeTable.tag, tagsTable.id))
+).map((t) => t.tag);
+ingredients = (
+    await db
+        .select({ ingredient: ingredientTable.ingredient })
+        .from(ingredientRecipeTable)
+        .innerJoin(
+            ingredientTable,
+            eq(ingredientRecipeTable.ingredient, ingredientTable.id),
+        )
+).map((t) => t.ingredient);
+
+//comments
+comments = (await db
+    .select()
+    .from(commemtsTable)
+    .where(eq(commemtsTable.recipeId, recipe.id))) as Comment[];
+
+//views
+let views = await db
+    .select()
+    .from(viewTable)
+    .where(
+        and(eq(viewTable.userId, user.id), eq(viewTable.recipeId, recipe.id)),
+    );
+
+if (!views.length) {
+    views = await db
+        .insert(viewTable)
+        .values({
+            userId: user.id,
+            recipeId: recipe.id,
+        })
+        .returning();
 }
+
+view = views[0];
+
+//view counts
+viewCount = (
+    await db
+        .select({ count: count() })
+        .from(viewTable)
+        .where(eq(viewTable.recipeId, recipe.id))
+)[0].count;
+
+//like count
+likeCount = (
+    await db
+        .select({ count: count() })
+        .from(viewTable)
+        .where(
+            and(eq(viewTable.recipeId, recipe.id), eq(viewTable.liked, true)),
+        )
+)[0].count;
+
 ---
 
 <Layout title={recipe.title}>
@@ -54,6 +122,7 @@ if (recipes.length) {
             alt={recipe.title}
             class="w-full aspect-video mx-auto max-w-[800px] object-cover rounded-box"
         />
+
         <div class="flex gap-6 align-middle">
             <div class="avatar">
                 <div
@@ -74,8 +143,27 @@ if (recipes.length) {
                 }</span
             >
         </div>
+
+        <hr />
+
+        <form method="post" class="flex gap-4 items-center">
+            <button name="vote" value={String(view.liked)}>
+                {
+                    view.liked ? (
+                        <Icon name="ph:heart-fill" size={30} />
+                    ) : (
+                        <Icon name="ph:heart-duotone" size={30} />
+                    )
+                }
+            </button>
+            <span>{likeCount} likes</span>
+            <span>{viewCount} views</span>
+        </form>
+
+        <hr />
+
         <p>{recipe.shortDescription}</p>
-        <div class="prose lg:prose-xl" set:html={recipe.description} />
+        <div class="prose min-w-full" set:html={recipe.description} />
 
         <div class="border border-neutral p-4 rounded-btn">
             <h4 class="text-lg font-semibold mb-4">tags</h4>
@@ -101,6 +189,39 @@ if (recipes.length) {
                     ))
                 }
             </ul>
+        </div>
+
+        <div class="space-y-4">
+            <h2 class="text-2xl font-semibold">Comments</h2>
+            <hr />
+
+            <form method="post">
+                <p class="mb-2">Post a comment</p>
+                <div class="flex">
+                    <input type="text" name="comment" />
+                    <button class="btn btn-primary">Post</button>
+                </div>
+            </form>
+            {
+                comments.map((comment) => (
+                    <div class="chat chat-end">
+                        <div class="chat-image avatar">
+                            <div class="w-10 rounded-full">
+                                <img
+                                    alt="Tailwind CSS chat bubble component"
+                                    src="https://daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg"
+                                />
+                            </div>
+                        </div>
+                        <div class="chat-header">
+                            Anakin
+                            <time class="text-xs opacity-50">12:46</time>
+                        </div>
+                        <div class="chat-bubble">I hate you!</div>
+                        <div class="chat-footer opacity-50">Seen at 12:46</div>
+                    </div>
+                ))
+            }
         </div>
     </article>
 </Layout>

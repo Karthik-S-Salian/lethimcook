@@ -27,7 +27,7 @@ interface Tag {
 interface View {
     userId: number;
     recipeId: number;
-    liked: boolean;
+    liked: boolean|null;
   }
   
 interface Comment {
