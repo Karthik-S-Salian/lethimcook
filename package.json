@@ -1,5 +1,5 @@
 {
-  "name": "",
+  "name": "lethimcook",
   "type": "module",
   "version": "0.0.1",
   "scripts": {
@@ -10,13 +10,16 @@
     "astro": "astro",
     "db:push": "drizzle-kit push:sqlite",
     "db:studio": "drizzle-kit studio",
-    "db:generate": "drizzle-kit generate:sqlite"
+    "db:generate": "drizzle-kit generate:sqlite",
+    "db:run":"turso dev --db-file lethimcook.db"
   },
   "dependencies": {
     "@astrojs/check": "^0.5.10",
     "@astrojs/node": "^8.2.5",
     "@astrojs/react": "^3.1.1",
     "@astrojs/tailwind": "^5.1.0",
+    "@dicebear/collection": "^8.0.1",
+    "@dicebear/core": "^8.0.1",
     "@iconify-json/mdi": "^1.1.66",
     "@iconify-json/ph": "^1.1.12",
     "@iconify-json/tabler": "^1.1.109",

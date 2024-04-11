@@ -1,9 +1,51 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Navbar from '../components/Navbar.astro';
+import Navbar from "../components/Navbar.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<Layout title="recipe book">
-	<Navbar/>
-</Layout>
+<BaseLayout title="recipe book">
+	<Navbar />
 
+	<section class="hero grid place-content-center">
+		<div class="p-4 text-center bg-neutral-50/30 text-white rounded-box max-w-[600px] space-y-4">
+			<h1 class="font-bold text-[2.5rem]">LetHimCook</h1>
+			<p>
+				Lorem ipsum dolor sit amet consectetur adipisicing elit.
+				Cupiditate, fuga reiciendis quos beatae debitis optio sapiente
+				iure, impedit ea nemo, sed illo! Veritatis delectus inventore
+				molestias explicabo adipisci commodi! Aperiam!
+			</p>
+
+			<a href="/recipes" class="btn-primary btn">Explore Recipes</a>
+		</div>
+	</section>
+
+	<footer
+		class="flex flex-col gap-8 text-center items-center p-8 bg-neutral rounded-t-3xl mx-[5%]"
+	>
+		<h1 class="font-bold text-2xl">About Us</h1>
+		<p class="w-full max-w-[500px]">
+			Lorem ipsum, dolor sit amet consectetur adipisicing elit. Neque
+			beatae distinctio laborum autem corrupti vitae esse ipsum? In sequi
+			sint expedita, quam, odit necessitatibus, beatae incidunt totam iste
+			excepturi labore.
+		</p>
+
+		<hr class="w-full" />
+		<p>copyright@2024</p>
+	</footer>
+</BaseLayout>
+
+<style>
+	section {
+		height: 100vh;
+		min-height: 800px;
+	}
+
+	.hero {
+		background-image: url("hero2.jpeg");
+		background-size: cover;
+		background-repeat: no-repeat;
+		background-position: center;
+	}
+</style>

@@ -5,6 +5,7 @@ export const userTable = sqliteTable('user', {
     id: integer('id', { mode: 'number' }).primaryKey({ autoIncrement: true }),
     name: text("name").notNull(),
     email: text("email").notNull().unique(),
+    image:text("image"),
     password: text("password").notNull(),
     joinedOn: text("joined_on").default(sql`CURRENT_TIMESTAMP`).notNull()
 });
@@ -25,8 +26,8 @@ export const ingredientTable = sqliteTable('ingredient', {
 });
 
 export const ingredientRecipeTable = sqliteTable('ingredient_recipe', {
-    ingredient: integer("ingredient").references(() => ingredientTable.id),
-    recipe: integer("recipe").references(() => recipeTable.id),
+    ingredient: integer("ingredient").references(() => ingredientTable.id).notNull(),
+    recipe: integer("recipe").references(() => recipeTable.id).notNull(),
 }, (table) => {
     return {
         pk: primaryKey({ columns: [table.ingredient, table.recipe] }),
@@ -39,8 +40,8 @@ export const tagsTable = sqliteTable('Tag', {
 });
 
 export const tagRecipeTable = sqliteTable('tag_recipe', {
-    tag: integer("tag").references(()=>tagsTable.id),
-    recipe: integer("recipe").references(() => recipeTable.id),
+    tag: integer("tag").references(()=>tagsTable.id).notNull(),
+    recipe: integer("recipe").references(() => recipeTable.id).notNull(),
 }, (table) => {
     return {
         pk: primaryKey({ columns: [table.tag, table.recipe] }),

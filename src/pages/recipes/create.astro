@@ -2,7 +2,7 @@
 import Quill from "../../components/Quill";
 import TagInput from "../../components/TagInput";
 import Layout from "../../layouts/Layout.astro";
-import { v2 as cloudinary } from "cloudinary";
+import { uploadStream } from "../../lib/image";
 import { db } from "../../lib/server/db";
 import {
     ingredientRecipeTable,
@@ -14,26 +14,6 @@ import { tagsTable } from "../../lib/server/db/schema";
 import { eq } from "drizzle-orm/sqlite-core/expressions";
 let error: string = "";
 
-type UploadResponse = {
-    secure_url: string;
-};
-
-cloudinary.config({
-    cloud_name: import.meta.env.CLOUDINARY_CLOUD_NAME,
-    api_key: import.meta.env.CLOUDINARY_API_KEY,
-    api_secret: import.meta.env.CLOUDINARY_API_SECRET,
-});
-
-const uploadStream = async (buffer: Uint8Array, options: any) => {
-    return new Promise<UploadResponse>((resolve, reject) => {
-        cloudinary.uploader
-            .upload_stream(options, (error, result) => {
-                if (error) return reject(error);
-                resolve(result as unknown as UploadResponse);
-            })
-            .end(buffer);
-    });
-};
 
 async function addTag(tag: string, recipeId: number) {
     let ids = await db
