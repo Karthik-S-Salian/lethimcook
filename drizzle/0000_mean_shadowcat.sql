@@ -1,7 +1,7 @@
 CREATE TABLE `Comment` (
 	`user_id` integer NOT NULL,
 	`recipe_id` integer NOT NULL,
-	`content` text,
+	`content` text NOT NULL,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	PRIMARY KEY(`recipe_id`, `user_id`),
 	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE no action,
@@ -9,8 +9,8 @@ CREATE TABLE `Comment` (
 );
 --> statement-breakpoint
 CREATE TABLE `ingredient_recipe` (
-	`ingredient` integer,
-	`recipe` integer,
+	`ingredient` integer NOT NULL,
+	`recipe` integer NOT NULL,
 	PRIMARY KEY(`ingredient`, `recipe`),
 	FOREIGN KEY (`ingredient`) REFERENCES `ingredient`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`recipe`) REFERENCES `recipe`(`id`) ON UPDATE no action ON DELETE no action
@@ -26,15 +26,15 @@ CREATE TABLE `recipe` (
 	`title` text NOT NULL,
 	`image` text,
 	`short_desciption` text,
-	`desciption` text,
+	`desciption` text NOT NULL,
 	`author_id` integer NOT NULL,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	FOREIGN KEY (`author_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE TABLE `tag_recipe` (
-	`tag` integer,
-	`recipe` integer,
+	`tag` integer NOT NULL,
+	`recipe` integer NOT NULL,
 	PRIMARY KEY(`recipe`, `tag`),
 	FOREIGN KEY (`tag`) REFERENCES `Tag`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`recipe`) REFERENCES `recipe`(`id`) ON UPDATE no action ON DELETE no action
@@ -49,6 +49,7 @@ CREATE TABLE `user` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,
 	`email` text NOT NULL,
+	`image` text,
 	`password` text NOT NULL,
 	`joined_on` text DEFAULT CURRENT_TIMESTAMP NOT NULL
 );

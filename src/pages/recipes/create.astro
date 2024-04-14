@@ -14,7 +14,6 @@ import { tagsTable } from "../../lib/server/db/schema";
 import { eq } from "drizzle-orm/sqlite-core/expressions";
 let error: string = "";
 
-
 async function addTag(tag: string, recipeId: number) {
     let ids = await db
         .select({ id: tagsTable.id })
@@ -38,7 +37,7 @@ async function addTag(tag: string, recipeId: number) {
     });
 }
 
-async function addIngredients(ingredient: string, recipeId: number) {
+async function addIngredient(ingredient: string, recipeId: number) {
     let ids = await db
         .select({ id: ingredientTable.id })
         .from(ingredientTable)
@@ -104,7 +103,7 @@ async function createRecipe(data: FormData) {
     await Promise.allSettled(
         ingredients
             .split(",")
-            .map((ingredient) => addIngredients(ingredient, recipe.id)),
+            .map((ingredient) => addIngredient(ingredient, recipe.id)),
     );
     return true;
 }

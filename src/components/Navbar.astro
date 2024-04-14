@@ -1,27 +1,30 @@
 ---
 import { Icon } from "astro-icon/components";
-const user = Astro.locals.user;
+interface Props {
+	user: User;
+}
+
+const { user } = Astro.props;
 ---
 
 <div
     class="flex px-8 py-4 justify-between items-center bg-neutral/90 border-2 fixed top-0 w-full"
 >
-    <Icon name="mdi:cook" />
+    <a href="/"><Icon name="mdi:cook" size={25} class="h-full aspect-square"/></a>
 
     <nav class="flex gap-2">
         <a href="/recipes">recipies</a>
         <a href="/recipes/create">create</a>
-        <a href="/about">about</a>
     </nav>
 
     {
-        user ? (
+        (!user) ? (
             <a
                 class="flex gap-2 items-center bg-primary btn-primary  px-4 py-2 rounded-btn"
-                href="/auth/login"
+                href="/auth/signin"
             >
                 Login
-                <Icon name="tabler:arrow-right" />
+                <Icon name="tabler:arrow-right"/>
             </a>
         ) : (
             <div class="avatar m-0">

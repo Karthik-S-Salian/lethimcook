@@ -4,8 +4,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
 <BaseLayout title="recipe book">
-	<Navbar />
-
 	<section class="hero grid place-content-center">
 		<div class="p-4 text-center bg-neutral-50/30 text-white rounded-box max-w-[600px] space-y-4">
 			<h1 class="font-bold text-[2.5rem]">LetHimCook</h1>
@@ -47,5 +45,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 		background-size: cover;
 		background-repeat: no-repeat;
 		background-position: center;
+	}
+</style>
+
+
+<style is:global>
+	body{
+		padding: 0;
 	}
 </style>

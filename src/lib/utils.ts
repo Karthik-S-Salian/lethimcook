@@ -12,3 +12,10 @@ export async function setToken(user: User, cookies:AstroCookies) {
 		path: "/",
 	});
 }
+
+
+export async function deleteToken(cookies:AstroCookies) {
+	cookies.delete("auth_token", {
+		path: "/",
+	});
+}

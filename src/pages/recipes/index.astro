@@ -24,9 +24,10 @@ const recipes = await db
                 >
                     <figure>
                         <img
+                            id={recipe.id.toString()}
                             src={recipe.image}
                             alt={recipe.title}
-                            class="aspect-[4/3]"
+                            class="aspect-[4/3] object-cover"
                         />
                     </figure>
                     <div class="card-body">

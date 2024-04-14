@@ -1,3 +1,60 @@
 ---
 import Layout from "../../layouts/Layout.astro";
+import { db } from "../../lib/server/db";
+import { eq } from "drizzle-orm";
+import { recipeTable, userTable } from "../../lib/server/db/schema";
+
+const users = await db.select().from(userTable).where(eq(userTable.id,Number(Astro.params.id!)));
+
+if(!users.length){
+    console.log("user not found")
+    return Astro.redirect("/");
+}
+
+const user = users[0]
+
+const recipes = await db.select({
+    id:recipeTable.id,
+    title:recipeTable.title
+}).from(recipeTable).where(eq(recipeTable.authorId,user.id));
+    
+
+if(Astro.request.method=="POST"){
+    const data =await  Astro.request.formData()
+    const id = data.get("delete")?.toString();
+
+    if(id){
+        await db.delete(recipeTable).where(eq(recipeTable.id,Number(id) as number))
+    }
+}
 ---
+
+<Layout title={user.name}>
+    <div class="flex flex-wrap items-center justify-evenly">
+        <div class="avatar">
+            <div class="w-48 rounded-full">
+              <img src="https://daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg" />
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-xl font-bold">{user.name}</h3>
+            <h6 class="text-lg font-semibold">{user.email}</h6>
+          </div>
+    </div>
+
+    <div class="flex flex-col gap-4">
+        {recipes.map(recipe=>(
+            <a href={`/recipes/${recipe.id}`}>
+                <div  class="bg-neutral rounded-box p-4 w-full">
+                <h4 class="text-lg font-semibold">{recipe.title}</h4>
+
+                <form method="post">
+                        <button name="delete" value={recipe.id} class="btn text-neutral-content bg-error">Delete</button>
+                </form>
+            </div>    
+            </a>
+        ))}
+    </div>
+
+</Layout>
